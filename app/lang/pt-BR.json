@@ -406,7 +406,7 @@
     "O Mailspring não suporta folhas de estilo com a extensão: %@",
   "Mailspring encountered errors syncing this account. Crash reports have been sent to the Mailspring team and we'll work to fix these errors in the next release.":
     "A Mailspring encontrou erros ao sincronizar essa conta. Os relatórios de falhas foram enviados para a equipe do Mailspring e trabalharemos para corrigir esses erros na próxima versão.",
-  "Mailspring is clearing it's cache for %@. Depending on the size of the mailbox, this may take a few seconds or a few minutes. An alert will appear when cleanup is complete.":
+  "Mailspring is clearing its cache %@. Depending on the size of the mailbox, this may take a few seconds or a few minutes. An alert will appear when cleanup is complete.":
     "O Mailspring está limpando seu cache para %@. Dependendo do tamanho da caixa de correio, isso pode levar alguns segundos ou alguns minutos. Um alerta aparecerá quando a limpeza estiver concluída.",
   "Mailspring is independent %@ software, and subscription revenue allows us spend time maintaining and improving the product.":
     "A Mailspring é um software independente %@, e a receita de assinaturas nos permite gastar tempo mantendo e melhorando o produto.",
@@ -1006,10 +1006,8 @@
   "Yahoo is unavailable.": "Yahoo não está disponível.",
   "Yes": "Sim",
   "You": "Você",
-  "You are using %@, which is free! You can link up to four email accounts and try pro features like send later, read receipts and reminders a few times a week.":
-    "Você está usando %@, que é grátis! Você pode vincular até quatro contas de e-mail e tentar recursos pro como enviar mais tarde, ler recibos e lembretes algumas vezes por semana.",
-  "You are using %@, which is free! You can link up to four email accounts and try pro features like snooze, send later, read receipts and reminders a few times a week.":
-    "Você está usando %@, que é grátis! Você pode vincular até quatro contas de e-mail e experimentar recursos pro como adiar, enviar mais tarde, ler recibos e lembretes algumas vezes por semana.",
+  "You are using %@, which is free! You can try pro features like snooze, send later, read receipts and reminders a few times a week.":
+    "Você está usando %@, que é grátis! Você pode experimentar recursos pro como adiar, enviar mais tarde, ler recibos e lembretes algumas vezes por semana.",
   "You can add reminders to %1$@ emails each %2$@ with Mailspring Basic.":
     "Você pode adicionar lembretes a %1$@ emails cada %2$@ com o Mailspring Basic.",
   "You can choose a shortcut set to use keyboard shortcuts of familiar email clients. To edit a shortcut, click it in the list below and enter a replacement on the keyboard.":
@@ -1043,8 +1041,8 @@
     "Você está em um canal de pré-lançamento. Nós adoraríamos o seu feedback.",
   "You're running the latest version of Mailspring (%@).":
     "Você está executando a versão mais recente do Mailspring (%@).",
-  "You're syncing more than four accounts — please consider paying for Mailspring Pro!":
-    "Você está sincronizando mais de quatro contas - considere pagar pelo Mailspring Pro!",
+  "Please consider paying for Mailspring Pro!":
+    "Considere pagar pelo Mailspring Pro!",
   "You've reached your quota": "Você atingiu sua cota",
   "Your Mailspring ID is missing required fields - you may need to reset Mailspring. %@":
     "Seu ID de Mailspring não possui campos obrigatórios - talvez seja necessário redefinir o Mailspring. %@",

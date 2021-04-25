@@ -90,7 +90,7 @@ export default class Application extends EventEmitter {
         buttons = [localized('Quit'), localized('Rebuild')];
       }
 
-      const buttonIndex = dialog.showMessageBox({ type: 'warning', buttons, message });
+      const buttonIndex = dialog.showMessageBoxSync({ type: 'warning', buttons, message });
 
       if (buttonIndex === 0) {
         app.quit();
@@ -269,9 +269,8 @@ export default class Application extends EventEmitter {
 
     const accounts = this.config.get('accounts');
     const hasAccount = accounts && accounts.length > 0;
-    const hasIdentity = this.config.get('identity.id');
 
-    if (hasAccount && hasIdentity) {
+    if (hasAccount) {
       this.windowManager.ensureWindow(WindowManager.MAIN_WINDOW);
     } else {
       this.windowManager.ensureWindow(WindowManager.ONBOARDING_WINDOW, {
@@ -285,7 +284,7 @@ export default class Application extends EventEmitter {
     this._resettingAndRelaunching = true;
 
     if (errorMessage) {
-      dialog.showMessageBox({
+      dialog.showMessageBoxSync({
         type: 'warning',
         buttons: [localized('Okay')],
         message: localized(
@@ -324,26 +323,23 @@ export default class Application extends EventEmitter {
       });
     });
 
-    this.on('application:run-package-specs', () => {
-      dialog.showOpenDialog(
-        {
-          title: localized('Choose Directory'),
-          defaultPath: this.configDirPath,
-          buttonLabel: localized('Choose'),
-          properties: ['openDirectory'],
-        },
-        filenames => {
-          if (!filenames || filenames.length === 0) {
-            return;
-          }
-          this.runSpecs({
-            exitWhenDone: false,
-            showSpecsInWindow: true,
-            resourcePath: this.resourcePath,
-            specDirectory: filenames[0],
-          });
-        }
-      );
+    this.on('application:run-package-specs', async () => {
+      const { filePaths } = await dialog.showOpenDialog({
+        title: localized('Choose Directory'),
+        defaultPath: this.configDirPath,
+        buttonLabel: localized('Choose'),
+        properties: ['openDirectory'],
+      });
+
+      if (!filePaths || filePaths.length === 0) {
+        return;
+      }
+      this.runSpecs({
+        exitWhenDone: false,
+        showSpecsInWindow: true,
+        resourcePath: this.resourcePath,
+        specDirectory: filePaths[0],
+      });
     });
 
     this.on('application:reset-database', this._resetDatabaseAndRelaunch);
@@ -358,6 +354,19 @@ export default class Application extends EventEmitter {
         return;
       }
       win.browserWindow.inspectElement(x, y);
+    });
+
+    this.on('application:add-identity', () => {
+      const onboarding = this.windowManager.get(WindowManager.ONBOARDING_WINDOW);
+      if (onboarding) {
+        onboarding.show();
+        onboarding.focus();
+      } else {
+        this.windowManager.ensureWindow(WindowManager.ONBOARDING_WINDOW, {
+          title: localized('Welcome to Mailspring'),
+          windowProps: {},
+        });
+      }
     });
 
     this.on('application:add-account', ({ existingAccountJSON } = {}) => {
@@ -397,19 +406,17 @@ export default class Application extends EventEmitter {
     });
 
     this.on('application:view-help', () => {
-      const helpUrl = 'http://support.getmailspring.com/hc/en-us';
+      const helpUrl = 'https://community.getmailspring.com/docs';
       shell.openExternal(helpUrl);
     });
 
     this.on('application:view-getting-started', () => {
-      const helpUrl =
-        'https://foundry376.zendesk.com/hc/en-us/sections/115000521592-Getting-Started';
+      const helpUrl = 'https://community.getmailspring.com/pub/quick-start-guide';
       shell.openExternal(helpUrl);
     });
 
-    this.on('application:view-faq', () => {
-      const helpUrl =
-        'https://foundry376.zendesk.com/hc/en-us/sections/115000521892-Frequently-Asked-Questions';
+    this.on('application:view-community', () => {
+      const helpUrl = 'https://community.getmailspring.com/';
       shell.openExternal(helpUrl);
     });
 
@@ -550,7 +557,7 @@ export default class Application extends EventEmitter {
     ipcMain.on('encountered-theme-error', (event, { message, detail }) => {
       if (userResetTheme) return;
 
-      const buttonIndex = dialog.showMessageBox({
+      const buttonIndex = dialog.showMessageBoxSync({
         type: 'warning',
         buttons: [localized('Reset Theme'), localized('Continue')],
         defaultId: 0,

@@ -14,7 +14,10 @@ const DELAY_FOR_SHEET_ANIMATION = 25;
 const helper = new DefaultClientHelper();
 const service = new SystemStartService();
 
-class DefaultMailClientItem extends React.Component<{}, DefaultMailClientItemState> {
+class DefaultMailClientItem extends React.Component<
+  Record<string, unknown>,
+  DefaultMailClientItemState
+> {
   _mounted = false;
 
   state: DefaultMailClientItemState = { defaultClient: helper.available() ? false : 'unknown' };
@@ -55,7 +58,9 @@ class DefaultMailClientItem extends React.Component<{}, DefaultMailClientItemSta
             style={{ marginBottom: 12 }}
             className="btn btn-small"
             onClick={() =>
-              shell.openExternal('https://foundry376.zendesk.com/hc/en-us/articles/115002281851')
+              shell.openExternal(
+                'https://community.getmailspring.com/t/choose-mailspring-as-the-default-mail-client-on-linux/191'
+              )
             }
           >
             {localized('Use Mailspring as default mail client')}
@@ -78,12 +83,14 @@ class DefaultMailClientItem extends React.Component<{}, DefaultMailClientItemSta
   }
 }
 
+interface LaunchSystemStartItemState {
+  launchOnStart: boolean | 'unavailable';
+}
+
 class LaunchSystemStartItem extends React.Component {
   _service = new SystemStartService();
-  state = {
-    available: false,
-    launchOnStart: false,
-  };
+
+  state: LaunchSystemStartItemState = { launchOnStart: 'unavailable' };
 
   _mounted: boolean;
 
@@ -92,12 +99,13 @@ class LaunchSystemStartItem extends React.Component {
 
     const available = await service.checkAvailability();
     if (!this._mounted) return;
-    this.setState({ available });
 
     if (available) {
-      const launchOnStart = service.doesLaunchOnSystemStart();
+      const launchOnStart = await service.doesLaunchOnSystemStart();
       if (!this._mounted) return;
-      this.setState({ launchOnStart });
+      this.setState({ launchOnStart: launchOnStart });
+    } else {
+      this.setState({ launchOnStart: 'unavailable' });
     }
   }
 
@@ -117,7 +125,7 @@ class LaunchSystemStartItem extends React.Component {
   };
 
   render() {
-    if (!this.state.available) return false;
+    if (this.state.launchOnStart === 'unavailable') return false;
 
     return (
       <div className="item">

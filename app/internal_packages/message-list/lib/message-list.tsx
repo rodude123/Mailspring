@@ -44,10 +44,10 @@ const PREF_REPLY_TYPE = 'core.sending.defaultReplyType';
 const PREF_RESTRICT_WIDTH = 'core.reading.restrictMaxWidth';
 const PREF_DESCENDING_ORDER = 'core.reading.descendingOrderMessageList';
 
-class MessageList extends React.Component<{}, MessageListState> {
+class MessageList extends React.Component<Record<string, unknown>, MessageListState> {
   static displayName = 'MessageList';
   static containerStyles = {
-    minWidth: 500,
+    minWidth: 480,
     maxWidth: 999999,
   };
 

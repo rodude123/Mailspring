@@ -7,9 +7,9 @@ import {
   IIdentity,
 } from 'mailspring-exports';
 import { OpenIdentityPageButton, BillingModal, RetinaImg } from 'mailspring-component-kit';
-import { shell } from 'electron';
+import { shell, ipcRenderer } from 'electron';
 
-class RefreshButton extends React.Component<{}, { refreshing: boolean }> {
+class RefreshButton extends React.Component<Record<string, unknown>, { refreshing: boolean }> {
   constructor(props) {
     super(props);
     this.state = { refreshing: false };
@@ -47,8 +47,7 @@ class RefreshButton extends React.Component<{}, { refreshing: boolean }> {
 
 const ProTourFeatures = [
   {
-    link:
-      'https://foundry376.zendesk.com/hc/en-us/articles/115003340291--Add-reminders-to-sent-messages',
+    link: 'https://community.getmailspring.com/t/add-reminders-to-sent-messages/157',
     icon: `icon-composer-reminders.png`,
     title: localized(`Follow-up reminders`),
     text: localized(
@@ -56,8 +55,7 @@ const ProTourFeatures = [
     ),
   },
   {
-    link:
-      'https://foundry376.zendesk.com/hc/en-us/articles/115001881272--View-contact-and-company-profiles',
+    link: 'https://community.getmailspring.com/t/view-contact-and-company-profiles/159',
     icon: `toolbar-person-sidebar.png`,
     title: localized(`Rich contact profiles`),
     text: localized(
@@ -66,7 +64,7 @@ const ProTourFeatures = [
   },
   {
     link:
-      'https://foundry376.zendesk.com/hc/en-us/articles/115001875431--Enable-read-receipts-link-tracking-and-notifications',
+      'https://community.getmailspring.com/t/read-receipts-link-tracking-and-activity-reports/162',
     icon: `icon-composer-eye.png`,
     title: localized(`Read Receipts`),
     text: localized(
@@ -74,8 +72,7 @@ const ProTourFeatures = [
     ),
   },
   {
-    link:
-      'https://foundry376.zendesk.com/hc/en-us/articles/115001875231--Reply-faster-with-email-templates',
+    link: 'https://community.getmailspring.com/t/reply-faster-with-email-templates/167',
     icon: `toolbar-templates.png`,
     title: localized(`Mail Templates`),
     text: localized(
@@ -84,7 +81,7 @@ const ProTourFeatures = [
   },
   {
     link:
-      'https://foundry376.zendesk.com/hc/en-us/articles/115001875431--Enable-read-receipts-link-tracking-and-notifications',
+      'https://community.getmailspring.com/t/read-receipts-link-tracking-and-activity-reports/162',
     icon: `icon-composer-linktracking.png`,
     title: localized(`Link tracking`),
     text: localized(
@@ -92,8 +89,7 @@ const ProTourFeatures = [
     ),
   },
   {
-    link:
-      'https://foundry376.zendesk.com/hc/en-us/articles/115001882012--Schedule-messages-to-send-later',
+    link: 'https://community.getmailspring.com/t/schedule-messages-to-send-later/158',
     icon: `icon-composer-sendlater.png`,
     title: localized(`Send Later`),
     text: localized(
@@ -101,8 +97,7 @@ const ProTourFeatures = [
     ),
   },
   {
-    link:
-      'https://foundry376.zendesk.com/hc/en-us/articles/115001881272--View-contact-and-company-profiles',
+    link: 'https://community.getmailspring.com/t/view-contact-and-company-profiles/159',
     icon: `icon-composer-reminders.png`,
     title: localized(`Company overviews`),
     text: localized(
@@ -110,8 +105,7 @@ const ProTourFeatures = [
     ),
   },
   {
-    link:
-      'https://foundry376.zendesk.com/hc/en-us/articles/115001881232--Snooze-emails-to-handle-them-later',
+    link: 'https://community.getmailspring.com/t/snooze-emails-to-handle-them-later/161',
     icon: `toolbar-snooze.png`,
     title: localized(`Snooze messages`),
     text: localized(
@@ -119,7 +113,8 @@ const ProTourFeatures = [
     ),
   },
   {
-    link: 'https://foundry376.zendesk.com/hc/en-us/articles/115002507891-Activity-Reports-In-Depth',
+    link:
+      'https://community.getmailspring.com/t/read-receipts-link-tracking-and-activity-reports/162',
     icon: `icon-toolbar-activity.png`,
     title: localized(`Mailbox insights`),
     text: localized(
@@ -127,7 +122,7 @@ const ProTourFeatures = [
     ),
   },
   {
-    link: 'https://foundry376.zendesk.com/hc/en-us/articles/360031102452',
+    link: 'https://community.getmailspring.com/t/automatically-translate-incoming-email/166',
     icon: `pro-feature-translation.png`,
     title: localized(`Automatic Translation`),
     text: localized(
@@ -136,7 +131,10 @@ const ProTourFeatures = [
   },
 ];
 
-class PreferencesIdentity extends React.Component<{}, { identity: IIdentity }> {
+class PreferencesIdentity extends React.Component<
+  Record<string, unknown>,
+  { identity: IIdentity | null }
+> {
   static displayName = 'PreferencesIdentity';
 
   unsubscribe: () => void;
@@ -158,7 +156,7 @@ class PreferencesIdentity extends React.Component<{}, { identity: IIdentity }> {
 
   _getStateFromStores() {
     return {
-      identity: IdentityStore.identity() || {},
+      identity: IdentityStore.identity(),
     };
   }
 
@@ -170,14 +168,45 @@ class PreferencesIdentity extends React.Component<{}, { identity: IIdentity }> {
     });
   };
 
-  _renderBasic() {
+  _onLinkIdentity = () => {
+    ipcRenderer.send('command', 'application:add-identity');
+  };
+
+  _renderNoIdentity() {
+    return (
+      <>
+        <div className="row padded">
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+            <div className="basic-explanation" style={{ display: 'flex' }}>
+              {localizedReactFragment(
+                `You are not signed in to Mailspring. Link the app to a free Mailspring ID to use great free features like send later and snoozing, or upgrade to Mailspring Pro for unlimited message translation and more.`
+              )}
+              <div
+                className="btn btn-emphasis"
+                onClick={this._onLinkIdentity}
+                style={{ verticalAlign: 'top', flexShrink: 0, marginLeft: 30 }}
+              >
+                <RetinaImg name="ic-upgrade.png" mode={RetinaImg.Mode.ContentIsMask} />{' '}
+                {localized(`Setup Mailspring ID`)}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="row padded" style={{ paddingTop: 0 }}>
+          <ExploreMailspringPro />
+        </div>
+      </>
+    );
+  }
+
+  _renderBasicPlan() {
     const onLearnMore = () => shell.openExternal('https://getmailspring.com/pro');
     return (
       <div className="row padded">
         <div style={{ display: 'flex', alignItems: 'flex-start' }}>
           <div className="basic-explanation">
             {localizedReactFragment(
-              `You are using %@, which is free! You can link up to four email accounts and try pro features like snooze, send later, read receipts and reminders a few times a week.`,
+              `You are using %@, which is free! You can try pro features like snooze, send later, read receipts and reminders a few times a week.`,
               <strong>{localized('Mailspring Basic')}</strong>
             )}
             <span className="platform-linux-only">
@@ -192,92 +221,7 @@ class PreferencesIdentity extends React.Component<{}, { identity: IIdentity }> {
               `Upgrade to %@ to use all these great features permanently:`,
               <a onClick={onLearnMore}>{localized('Mailspring Pro')}</a>
             )}
-            <div className="features">
-              <ul>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`Rich contact profiles`)}
-                </li>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`Follow-up reminders`)}
-                </li>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`Read Receipts`)}
-                </li>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`Link tracking`)}
-                </li>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`Powerful template support`)}
-                </li>
-              </ul>
-              <ul>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`Send Later`)}
-                </li>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`Company overviews`)}
-                </li>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`Snooze messages`)}
-                </li>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`Mailbox insights`)}
-                </li>
-                <li>
-                  <RetinaImg
-                    name="pro-feature-checkmark.png"
-                    style={{ paddingRight: 8 }}
-                    mode={RetinaImg.Mode.ContentDark}
-                  />
-                  {localized(`... and much more!`)}
-                </li>
-              </ul>
-            </div>
+            <ExploreMailspringSmall />
           </div>
           <div className="subscription-actions">
             <div className="pro-feature-ring">
@@ -295,6 +239,7 @@ class PreferencesIdentity extends React.Component<{}, { identity: IIdentity }> {
             </div>
           </div>
         </div>
+        <ExploreMailspringPro />
       </div>
     );
   }
@@ -318,31 +263,13 @@ class PreferencesIdentity extends React.Component<{}, { identity: IIdentity }> {
             <strong
               style={{ textTransform: 'capitalize' }}
             >{`Mailspring ${planDisplayName}`}</strong>,
-            <a href="https://foundry376.zendesk.com/hc/en-us/sections/115000521592-Getting-Started">
+            <a href="https://community.getmailspring.com/docs?topic=241">
               {localized(`Help Center`)}
             </a>
           )}
           {unpaidNote}
         </div>
-        <div className="feature-explore-title">{localized('Explore Mailspring Pro')}</div>
-        <div className="feature-explore-grid">
-          {ProTourFeatures.map(item => (
-            <a key={item.title} className="feature" href={item.link}>
-              <div className="popout">
-                <RetinaImg name="thread-popout.png" mode={RetinaImg.Mode.ContentDark} />
-              </div>
-              <h3>
-                <RetinaImg
-                  name={item.icon}
-                  style={{ paddingRight: 8 }}
-                  mode={RetinaImg.Mode.ContentDark}
-                />
-                {item.title}
-              </h3>
-              <p>{item.text}</p>
-            </a>
-          ))}
-        </div>
+        <ExploreMailspringPro />
         <div style={{ paddingTop: 15 }}>
           <OpenIdentityPageButton
             label={localized('Manage Billing')}
@@ -357,46 +284,162 @@ class PreferencesIdentity extends React.Component<{}, { identity: IIdentity }> {
 
   render() {
     const { identity } = this.state;
-    const {
-      firstName,
-      lastName,
-      emailAddress,
-      stripePlan = '',
-      stripePlanEffective = '',
-    } = identity;
-
-    const logout = () => Actions.logoutMailspringIdentity();
+    const stripePlan = identity ? identity.stripePlan : null;
 
     return (
       <div className="container-identity">
         <div className="identity-content-box">
-          <div className="row padded">
-            <div className="identity-info">
-              <RefreshButton />
-              <div className="name">
-                {firstName} {lastName}
-              </div>
-              <div className="email">{emailAddress}</div>
-              <div className="identity-actions">
-                <OpenIdentityPageButton
-                  label={localized('Account Details')}
-                  path="/dashboard"
-                  source="Preferences"
-                  campaign="Dashboard"
-                />
-                <div className="btn minor-width" onClick={logout}>
-                  {localized('Sign Out')}
-                </div>
-              </div>
-            </div>
-          </div>
-          {stripePlan === 'Basic'
-            ? this._renderBasic()
-            : this._renderPaidPlan(stripePlan, stripePlanEffective)}
+          {identity && <IdentitySummary identity={identity} />}
+
+          {!stripePlan
+            ? this._renderNoIdentity()
+            : stripePlan === 'Basic'
+            ? this._renderBasicPlan()
+            : this._renderPaidPlan(stripePlan, identity.stripePlanEffective)}
         </div>
       </div>
     );
   }
 }
+
+const ExploreMailspringSmall: React.FunctionComponent = () => (
+  <div className="features">
+    <ul>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`Rich contact profiles`)}
+      </li>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`Follow-up reminders`)}
+      </li>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`Read Receipts`)}
+      </li>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`Link tracking`)}
+      </li>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`Powerful template support`)}
+      </li>
+    </ul>
+    <ul>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`Send Later`)}
+      </li>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`Company overviews`)}
+      </li>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`Snooze messages`)}
+      </li>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`Mailbox insights`)}
+      </li>
+      <li>
+        <RetinaImg
+          name="pro-feature-checkmark.png"
+          style={{ paddingRight: 8 }}
+          mode={RetinaImg.Mode.ContentDark}
+        />
+        {localized(`... and much more!`)}
+      </li>
+    </ul>
+  </div>
+);
+
+const ExploreMailspringPro: React.FunctionComponent = () => (
+  <>
+    <div className="feature-explore-title">{localized('Explore Mailspring Pro')}</div>
+    <div className="feature-explore-grid">
+      {ProTourFeatures.map(item => (
+        <a key={item.title} className="feature" href={item.link}>
+          <div className="popout">
+            <RetinaImg name="thread-popout.png" mode={RetinaImg.Mode.ContentDark} />
+          </div>
+          <h3>
+            <RetinaImg
+              name={item.icon}
+              style={{ paddingRight: 8 }}
+              mode={RetinaImg.Mode.ContentDark}
+            />
+            {item.title}
+          </h3>
+          <p>{item.text}</p>
+        </a>
+      ))}
+    </div>
+  </>
+);
+
+const IdentitySummary: React.FunctionComponent<{ identity: IIdentity }> = props => {
+  const { firstName, lastName, emailAddress } = props.identity;
+  const logout = () => Actions.logoutMailspringIdentity();
+  return (
+    <div className="row padded">
+      <div className="identity-info">
+        <RefreshButton />
+        <div className="name">
+          {firstName} {lastName}
+        </div>
+        <div className="email">{emailAddress}</div>
+        <div className="identity-actions">
+          <OpenIdentityPageButton
+            label={localized('Account Details')}
+            path="/dashboard"
+            source="Preferences"
+            campaign="Dashboard"
+          />
+          <div className="btn minor-width" onClick={logout}>
+            {localized('Sign Out')}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default PreferencesIdentity;

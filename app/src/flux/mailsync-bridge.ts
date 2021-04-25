@@ -12,12 +12,13 @@ import { Account } from './models/account';
 import { AccountStore } from './stores/account-store';
 import DatabaseStore from './stores/database-store';
 import OnlineStatusStore from './stores/online-status-store';
-import DatabaseChangeRecord from './stores/database-change-record';
+import { DatabaseChangeRecord } from './stores/database-change-record';
 import DatabaseObjectRegistry from '../registries/database-object-registry';
-import { MailsyncProcess } from '../mailsync-process';
+import { MailsyncProcess, MailsyncProcessExit } from '../mailsync-process';
 import KeyManager from '../key-manager';
 import * as Actions from './actions';
 import * as Utils from './models/utils';
+import { Model } from 'mailspring-exports';
 
 const MAX_CRASH_HISTORY = 10;
 
@@ -43,7 +44,9 @@ class CrashTracker {
     delete this._tooManyFailures[key];
   }
 
-  recordClientCrash(fullAccountJSON, { code, error, signal }) {
+  recordClientCrash(fullAccountJSON, crash: MailsyncProcessExit) {
+    console.log(`Sync worker exited.`, crash);
+
     this._appendCrashToHistory(fullAccountJSON);
 
     // We now let crashpad do this, because Sentry was losing it's mind.
@@ -182,7 +185,7 @@ export default class MailsyncBridge {
       const buffer = Buffer.alloc(tailSize);
       const fd = fs.openSync(logpath, 'r');
       fs.readSync(fd, buffer, 0, tailSize, size - tailSize);
-      log = buffer.toString('UTF8');
+      log = buffer.toString('utf-8');
       log = log.substr(log.indexOf('\n') + 1);
     } catch (logErr) {
       console.warn(`Could not append ${logfile} to mailsync exception report: ${logErr}`);
@@ -235,7 +238,7 @@ export default class MailsyncBridge {
       AppEnv.showErrorDialog({
         title: localized(`Cleanup Started`),
         message: localized(
-          `Mailspring is clearing it's cache for %@. Depending on the size of the mailbox, this may take a few seconds or a few minutes. An alert will appear when cleanup is complete.`,
+          `Mailspring is clearing its cache %@. Depending on the size of the mailbox, this may take a few seconds or a few minutes. An alert will appear when cleanup is complete.`,
           account.emailAddress
         ),
       });
@@ -298,7 +301,7 @@ export default class MailsyncBridge {
     client.identity = IdentityStore.identity();
     client.sync();
     client.on('deltas', this._onIncomingMessages);
-    client.on('close', ({ code, error, signal }) => {
+    client.on('close', ({ code, error, signal }: MailsyncProcessExit) => {
       if (this._clients[account.id] !== client) {
         return;
       }
@@ -413,6 +416,10 @@ export default class MailsyncBridge {
         OnlineStatusStore.onSyncProcessStateReceived(modelJSONs[0]);
         continue;
       }
+      if (modelClass === 'ProcessAccountSecretsUpdated' && modelJSONs.length) {
+        KeyManager.extractAndStoreAccountSecrets(new Account(modelJSONs[0]));
+        continue;
+      }
 
       // dispatch the message to other windows
       ipcRenderer.send('mailsync-bridge-rebroadcast-to-all', msg);
@@ -429,7 +436,7 @@ export default class MailsyncBridge {
     }
   };
 
-  _onIncomingChangeRecord = (record: DatabaseChangeRecord) => {
+  _onIncomingChangeRecord = (record: DatabaseChangeRecord<Model>) => {
     // Allow observers of the database to handle this change
     DatabaseStore.trigger(record);
 

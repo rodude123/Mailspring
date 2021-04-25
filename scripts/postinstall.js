@@ -8,7 +8,9 @@ const rimraf = require('rimraf');
 const targz = require('targz');
 const { safeExec } = require('./utils/child-process-wrapper.js');
 
-const npmElectronTarget = require('../package.json').devDependencies.electron;
+const appDependencies = require('../app/package.json').dependencies;
+const rootDependencies = require('../package.json').dependencies;
+const npmElectronTarget = rootDependencies.electron;
 const npmEnvs = {
   system: process.env,
   electron: Object.assign({}, process.env, {
@@ -99,31 +101,78 @@ function downloadMailsync() {
 // For speed, we cache app/node_modules. However, we need to
 // be sure to do a full rebuild of native node modules when the
 // Electron version changes. To do this we check a marker file.
-const appModulesPath = path.resolve(__dirname, '..', 'app', 'node_modules');
+const appPath = path.resolve(__dirname, '..', 'app');
+const appModulesPath = path.resolve(appPath, 'node_modules');
 const cacheVersionPath = path.join(appModulesPath, '.postinstall-target-version');
 const cacheElectronTarget =
   fs.existsSync(cacheVersionPath) && fs.readFileSync(cacheVersionPath).toString();
 
 if (cacheElectronTarget !== npmElectronTarget) {
-  console.log(`\n-- Clearing app/node_modules --`);
+  console.log(
+    `\n-- Clearing app/node_modules (${cacheElectronTarget} !== ${npmElectronTarget}) --`
+  );
   rimraf.sync(appModulesPath);
 }
 
-// run `npm install` in ./app with Electron NPM config
-npm('install', { cwd: './app', env: 'electron' }).then(() => {
-  // run `npm dedupe` in ./app with Electron NPM config
-  npm('dedupe', { cwd: './app', env: 'electron' }).then(() => {
-    // run `npm ls` in ./app - detects missing peer dependencies, etc.
-    npm('ls', { cwd: './app', env: 'electron' }).then(() => {
-      // write the marker with the electron version
-      fs.writeFileSync(cacheVersionPath, npmElectronTarget);
+// Audit is emitted with npm ls, no need to run it on EVERY command which is an odd default
 
-      // if the user hasn't cloned the private mailsync module, download
-      // the binary for their operating system that was shipped to S3.
-      if (!fs.existsSync('./mailsync/build.sh')) {
-        console.log(`\n-- Downloading the last released version of Mailspring mailsync --`);
-        downloadMailsync();
+async function sqliteMissingUsleep() {
+  return new Promise(resolve => {
+    const sqliteLibDir = path.join(appModulesPath, 'better-sqlite3', 'build', 'Release');
+    safeExec(
+      `nm '${sqliteLibDir}/sqlite3.a' | grep usleep`,
+      { ignoreStderr: true },
+      (err, resp) => {
+        resolve(resp === '');
       }
-    });
+    );
   });
-});
+}
+
+async function run() {
+  // run `npm install` in ./app with Electron NPM config
+  await npm(`install --no-audit`, { cwd: './app', env: 'electron' });
+
+  // run `npm dedupe` in ./app with Electron NPM config
+  await npm(`dedupe --no-audit`, { cwd: './app', env: 'electron' });
+
+  // run `npm ls` in ./app - detects missing peer dependencies, etc.
+  await npm(`ls`, { cwd: './app', env: 'electron' });
+
+  // rebuild sqlite3 using our custom amalgamation, which has USLEEP enabled
+  if (process.platform === 'win32' || (await sqliteMissingUsleep())) {
+    // remove the existing build so NPM can't see that it's already present
+    rimraf.sync(path.join(appModulesPath, 'better-sqlite3'));
+    // install the module pointing to our local sqlite source with custom #DEFINEs set
+    const amalgamationPath = path.join(appPath, 'build', 'sqlite-amalgamation');
+    await npm(
+      `install better-sqlite3@${appDependencies['better-sqlite3']} ` +
+        `--no-save --no-audit --build-from-source --sqlite3="${amalgamationPath}"`,
+      { cwd: './app', env: 'electron' }
+    );
+    // remove the build symlinks so that we can build an installer for the app without
+    // symlinks out to the sqlite-amalgamation directory.
+    rimraf.sync(path.join(appModulesPath, 'better-sqlite3', 'build', 'Release', 'obj'));
+  }
+
+  // if SQlite was STILL not built with HAVE_USLEEP, do not ship this build! We need usleep
+  // support so that multiple processes can connect to the sqlite file at the same time.
+  // Without it, transactions only retry every 1 sec instead of every 10ms, leading to
+  // awful db lock contention.
+  if (['linux', 'darwin'].includes(process.platform) && (await sqliteMissingUsleep())) {
+    console.error(`better-sqlite compiled without -HAVE_USLEEP, do not ship this build!`);
+    process.exit(1001);
+  }
+
+  // write the marker with the electron version
+  fs.writeFileSync(cacheVersionPath, npmElectronTarget);
+
+  // if the user hasn't cloned the private mailsync module, download
+  // the binary for their operating system that was shipped to S3.
+  if (!fs.existsSync('./mailsync/build.sh')) {
+    console.log(`\n-- Downloading the last released version of Mailspring mailsync --`);
+    downloadMailsync();
+  }
+}
+
+run();

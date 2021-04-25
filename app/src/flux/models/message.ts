@@ -6,7 +6,7 @@ import * as Utils from './utils';
 import { Event } from './event';
 import { Contact } from './contact';
 import { Folder } from './folder';
-import Attributes from '../attributes';
+import * as Attributes from '../attributes';
 import { ModelWithMetadata } from './model-with-metadata';
 import { AttributeValues } from './model';
 
@@ -172,7 +172,7 @@ export class Message extends ModelWithMetadata {
       modelKey: 'forwardedHeaderMessageId',
     }),
 
-    folder: Attributes.Object({
+    folder: Attributes.Obj({
       queryable: false,
       modelKey: 'folder',
       itemClass: Folder,
@@ -256,7 +256,7 @@ export class Message extends ModelWithMetadata {
   // `to`, `cc`, `bcc` && (optionally) `from` fields.
   participants({ includeFrom = true, includeBcc = false } = {}) {
     const seen = {};
-    const all = [];
+    const all: Contact[] = [];
     let contacts = [...this.to, ...this.cc];
     if (includeFrom) {
       contacts = _.union(contacts, this.from || []);

@@ -1,5 +1,5 @@
 import { Task } from './task';
-import Attributes from '../attributes';
+import * as Attributes from '../attributes';
 import { Model, AttributeValues } from '../models/model';
 
 export class SyncbackMetadataTask extends Task {
@@ -11,8 +11,8 @@ export class SyncbackMetadataTask extends Task {
   }: {
     model: Model;
     pluginId: string;
-    value: object;
-    undoValue?: object;
+    value: { [key: string]: any };
+    undoValue?: { [key: string]: any };
   }) {
     if (!pluginId) {
       throw new Error('SyncbackMetadataTask.forSaving: You must specify a pluginId.');
@@ -54,10 +54,10 @@ export class SyncbackMetadataTask extends Task {
     modelHeaderMessageId: Attributes.String({
       modelKey: 'modelHeaderMessageId',
     }),
-    value: Attributes.Object({
+    value: Attributes.Obj({
       modelKey: 'value',
     }),
-    undoValue: Attributes.Object({
+    undoValue: Attributes.Obj({
       modelKey: 'undoValue',
     }),
   };
@@ -66,8 +66,8 @@ export class SyncbackMetadataTask extends Task {
   modelId: string;
   modelClassName: string;
   modelHeaderMessageId?: string;
-  value: object;
-  undoValue: object;
+  value: { [key: string]: any };
+  undoValue: { [key: string]: any };
 
   constructor(data: AttributeValues<typeof SyncbackMetadataTask.attributes> = {}) {
     super(data);

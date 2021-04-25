@@ -1,18 +1,17 @@
-
 export {};
 declare global {
   module NodeJS {
     interface Global {
       jasmine: any;
       shellStartTime: number;
-      errorLogger: import('../../error-logger');
+      errorLogger: any;
       application: import('../application').default;
     }
   }
 
   module Electron {
     interface BrowserWindow {
-      loadSettings: object;
+      loadSettings: { [key: string]: unknown };
       loadSettingsChangedSinceGetURL: boolean;
       updateLoadSettings: boolean;
     }

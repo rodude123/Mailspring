@@ -1,7 +1,8 @@
 /* eslint global-require: 0 */
 import { QuerySubscription } from './query-subscription';
-import DatabaseChangeRecord from '../stores/database-change-record';
+import { DatabaseChangeRecord } from '../stores/database-change-record';
 import ModelQuery from './query';
+import { Model } from './model';
 let DatabaseStore = null;
 
 /*
@@ -97,7 +98,7 @@ class QuerySubscriptionPool {
     return stack.slice(ii, ii + 4).join('\n');
   }
 
-  _keyForQuery<T>(query: ModelQuery<T>) {
+  _keyForQuery<T extends Model | Model[]>(query: ModelQuery<T>) {
     return query.sql();
   }
 
@@ -106,7 +107,7 @@ class QuerySubscriptionPool {
     DatabaseStore.listen(this._onChange);
   }
 
-  _onChange = (record: DatabaseChangeRecord) => {
+  _onChange = (record: DatabaseChangeRecord<Model>) => {
     for (const key of Object.keys(this._subscriptions)) {
       const subscription = this._subscriptions[key];
       subscription.applyChangeRecord(record);

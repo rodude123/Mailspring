@@ -2,7 +2,10 @@ import React from 'react';
 import { localized, Actions, AccountStore, IdentityStore, IIdentity } from 'mailspring-exports';
 import { Notification } from 'mailspring-component-kit';
 
-export default class PleaseSubscribeNotification extends React.Component<{}, { msg: string }> {
+export default class PleaseSubscribeNotification extends React.Component<
+  Record<string, unknown>,
+  { msg: string }
+> {
   static displayName = 'PleaseSubscribeNotification';
 
   unlisteners: Array<() => void>;
@@ -31,9 +34,7 @@ export default class PleaseSubscribeNotification extends React.Component<{}, { m
 
     let msg = null;
     if (stripePlan === 'Basic' && accountCount > 4) {
-      msg = localized(
-        `You're syncing more than four accounts — please consider paying for Mailspring Pro!`
-      );
+      msg = localized(`Please consider paying for Mailspring Pro!`);
     }
     if (stripePlan !== stripePlanEffective) {
       msg = localized(`We're having trouble billing your Mailspring subscription.`);

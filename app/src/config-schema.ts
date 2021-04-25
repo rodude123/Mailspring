@@ -30,13 +30,15 @@ export default {
           mode: {
             type: 'string',
             default: 'list',
-            enum: ['split', 'list'],
+            enum: ['split', 'list', 'splitVertical'],
           },
           systemTray: {
             type: 'boolean',
             default: true,
             title: localized('Show icon in menu bar / system tray'),
-            platforms: ['darwin', 'linux'],
+            note: localized(
+              'On Linux you need to restart Mailspring for the tray icon to disappear.'
+            ),
           },
           showImportant: {
             type: 'boolean',
@@ -291,6 +293,13 @@ export default {
             type: 'boolean',
             default: true,
             title: localized('Message Sent Sound'),
+          },
+          defaultSendType: {
+            type: 'string',
+            default: 'send',
+            enum: ['send', 'send-and-archive'],
+            enumLabels: [localized('Send'), localized('Send and Archive')],
+            title: localized('Default send behavior'),
           },
           defaultReplyType: {
             type: 'string',

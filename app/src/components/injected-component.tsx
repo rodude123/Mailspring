@@ -4,13 +4,14 @@ import { PropTypes, Utils, ComponentRegistry } from 'mailspring-exports';
 
 import InjectedComponentErrorBoundary from './injected-component-error-boundary';
 import InjectedComponentLabel from './injected-component-label';
+import { ComponentRegistryDescriptor } from '../registries/component-registry';
 
 type InjectedComponentProps = {
-  matching: object;
+  matching: ComponentRegistryDescriptor;
   className?: string;
-  exposedProps?: object;
+  exposedProps?: any;
   fallback?: (...args: any[]) => any;
-  style?: object;
+  style?: React.CSSProperties;
   requiredMethods?: string[];
   onComponentDidChange?: (...args: any[]) => any;
 };

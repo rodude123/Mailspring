@@ -1,6 +1,7 @@
 import MailspringStore from 'mailspring-store';
 import { remote } from 'electron';
 import url from 'url';
+import querystring from 'querystring';
 
 import * as Utils from '../models/utils';
 import * as Actions from '../actions';
@@ -19,7 +20,24 @@ export interface IIdentity {
   emailAddress: string;
   stripePlan: string;
   stripePlanEffective: string;
+  featureUsage: {
+    [featureKey: string]: {
+      featureLimitName: 'pro';
+      usedInPeriod: number;
+      quota: number;
+      period: 'weekly' | 'monthly';
+    };
+  };
 }
+
+export type IdentityAuthResponse = IIdentity | { skipped: true };
+
+export const EMPTY_FEATURE_USAGE = {
+  featureLimitName: 'pro',
+  period: 'monthly',
+  usedInPeriod: 0,
+  quota: 0,
+};
 
 class _IdentityStore extends MailspringStore {
   _identity: IIdentity = null;
@@ -77,7 +95,7 @@ class _IdentityStore extends MailspringStore {
     }, 1000 * 60 * 10); // 10 minutes
   }
 
-  async saveIdentity(identity) {
+  async saveIdentity(identity: IIdentity | null) {
     if (!identity) {
       this._identity = null;
       await KeyManager.deletePassword(KEYCHAIN_NAME);
@@ -112,9 +130,10 @@ class _IdentityStore extends MailspringStore {
    * cache and set the token from the keychain.
    */
   _onIdentityChanged = async () => {
-    const next = Object.assign({}, AppEnv.config.get('identity') || {});
-    next.token = await KeyManager.getPassword(KEYCHAIN_NAME);
-    this._identity = next;
+    const value = AppEnv.config.get('identity');
+    this._identity = value
+      ? { ...value, token: await KeyManager.getPassword(KEYCHAIN_NAME) }
+      : null;
     this.trigger();
   };
 
@@ -133,7 +152,7 @@ class _IdentityStore extends MailspringStore {
    * for the full list of utm_ labels.
    */
   async fetchSingleSignOnURL(
-    path,
+    path: string,
     { source, campaign, content }: { source?: string; campaign?: string; content?: string } = {}
   ) {
     if (!this._identity) {
@@ -172,8 +191,7 @@ class _IdentityStore extends MailspringStore {
     try {
       const json = await makeRequest({
         server: 'identity',
-        path: '/api/login-link',
-        qs: qs,
+        path: `/api/login-link?${querystring.stringify(qs)}`,
         body: body,
         timeout: 1500,
         method: 'POST',
